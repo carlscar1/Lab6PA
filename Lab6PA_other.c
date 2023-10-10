@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     sem_t *semaphore;
     int initialValue = 1;
     pid_t pid;
-    int temp;  // Declare temp variable to hold the temporary value for swapping
+    int temp;
     int status;
 
     // Create shared memory
@@ -45,6 +45,8 @@ int main(int argc, char *argv[]) {
     sharedMemoryPointer[0] = 0;
     sharedMemoryPointer[1] = 1;
 
+    printf("Initial values: %d\t%d\n", sharedMemoryPointer[0], sharedMemoryPointer[1]);
+
     pid = fork();
     if (pid < 0) {
         printf("Fork failed\n");
@@ -53,56 +55,52 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) { // Child
         printf("Child process started.\n");
-        for (int i = 0; i < 10; i++) {
-            // Wait for the semaphore (decrement)
-            if (sem_wait(semaphore) != 0) {
-                perror("Semaphore wait failed");
-                exit(1);
-            }
 
-            temp = sharedMemoryPointer[0];
-            sharedMemoryPointer[0] = sharedMemoryPointer[1];
-            sharedMemoryPointer[1] = temp;
-
-            // Release the semaphore (increment)
-            if (sem_post(semaphore) != 0) {
-                perror("Semaphore post failed");
-                exit(1);
-            }
-
-            printf("Child: Swapped values at iteration %d\n", i);
-            sleep(1); // Simulate some processing time
+        // Wait for the semaphore
+        if (sem_wait(semaphore) != 0) {
+            perror("Semaphore wait failed");
+            exit(1);
         }
+
+        temp = sharedMemoryPointer[0];
+        sharedMemoryPointer[0] = sharedMemoryPointer[1];
+        sharedMemoryPointer[1] = temp;
+
+        // Release the semaphore
+        if (sem_post(semaphore) != 0) {
+            perror("Semaphore post failed");
+            exit(1);
+        }
+
+        printf("Child: Swapped values\n");
+        printf("Final values: %d\t%d\n", sharedMemoryPointer[0], sharedMemoryPointer[1]);
         printf("Child process done.\n");
         exit(0);
     } else { // Parent
         printf("Parent process started.\n");
-        for (int i = 0; i < 10; i++) {
-            // Wait for the semaphore (decrement)
-            if (sem_wait(semaphore) != 0) {
-                perror("Semaphore wait failed");
-                exit(1);
-            }
 
-            temp = sharedMemoryPointer[1];
-            sharedMemoryPointer[1] = sharedMemoryPointer[0];
-            sharedMemoryPointer[0] = temp;
-
-            // Release the semaphore (increment)
-            if (sem_post(semaphore) != 0) {
-                perror("Semaphore post failed");
-                exit(1);
-            }
-
-            printf("Parent: Swapped values at iteration %d\n", i);
-            sleep(1); // Simulate some processing time
+        // Wait for the semaphore
+        if (sem_wait(semaphore) != 0) {
+            perror("Semaphore wait failed");
+            exit(1);
         }
+
+        temp = sharedMemoryPointer[1];
+        sharedMemoryPointer[1] = sharedMemoryPointer[0];
+        sharedMemoryPointer[0] = temp;
+
+        // Release the semaphore
+        if (sem_post(semaphore) != 0) {
+            perror("Semaphore post failed");
+            exit(1);
+        }
+
+        printf("Parent: Swapped values\n");
+        printf("Final values: %d\t%d\n", sharedMemoryPointer[0], sharedMemoryPointer[1]);
     }
 
     // Wait for child process to finish
     wait(&status);
-
-    printf("Values: %d\t%d\n", sharedMemoryPointer[0], sharedMemoryPointer[1]);
 
     // Detach shared memory
     if (shmdt((void *)sharedMemoryPointer) < 0) {
@@ -121,7 +119,6 @@ int main(int argc, char *argv[]) {
         perror("Unable to close semaphore");
         exit(1);
     }
-
     if (sem_unlink("/my_semaphore") != 0) {
         perror("Unable to unlink semaphore");
         exit(1);
