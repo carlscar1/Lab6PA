@@ -76,7 +76,8 @@ int main(int argc, char *argv[]) {
         printf("Final values: %d\t%d\n", sharedMemoryPointer[0], sharedMemoryPointer[1]);
         printf("Child process done.\n");
         exit(0);
-    } else { // Parent
+    } 
+    else { // Parent
         printf("Parent process started.\n");
 
         // Wait for the semaphore
